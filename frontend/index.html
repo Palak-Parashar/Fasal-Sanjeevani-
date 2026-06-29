@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Fasal Sanjeevani</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Merienda:wght@700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <header>
+
+        <img src="images/logo.png" class="logo">
+
+        <h2>फसल संजीवनी</h2>
+
+        <p class="tagline" id="tagline">
+            Your Crop's Health, Our AI's Priority 
+        </p>
+        <div class="language-switcher">
+    <button onclick="changeLanguage('en')">English</button>
+    <button onclick="changeLanguage('hi')">हिन्दी</button>
+</div>
+    </header>
+
+    <section class="hero">
+
+        <div class="hero-text">
+
+            <h1 id="heroTitle">Protecting Crops,Empowering Farmers</h1>
+
+            <p class="main-line" id="mainLine">
+                Detect Early, Protect Better, Harvest More.
+              </p>
+              <p id="heroDescription">
+                Detect crop diseases early with timely alerts and smart monitoring.
+                Act quickly to protect crops and improve yield and harvest quality.
+            </p>
+
+            <div class="hero-buttons">
+
+    <button class="scan-btn" onclick="openCamera()" id="scanBtn">
+        📷 Scan Crop
+    </button>
+
+    <button class="upload-btn" onclick="document.getElementById('fileInput').click()" id="uploadBtn">
+        🖼️ Upload Image
+    </button>
+    </div>
+
+<div id="loadingMessage"
+     style="display:none;
+     text-align:center;
+     font-size:22px;
+     color:#2E7D32;
+     margin-top:20px;">
+     
+     🔍 Analyzing Crop Image...
+</div>
+<div id="cameraBox" style="display:none; text-align:center; margin-top:20px;"></div>
+<img id="previewImage"
+     style="display:none;
+            max-width:400px;
+            margin-top:20px;
+            border-radius:12px;">
+    <video id="video" 
+    autoplay 
+    playsinline 
+    style="width:300px; border-radius:10px;">
+</video>
+
+    <br><br>
+
+    <button onclick="captureImage()"
+        id="captureBtn"
+        style="display:none;">
+    Capture
+</button>
+
+</div>
+
+<input type="file" id="fileInput" hidden>
+        </div>
+
+        <div class="hero-image">
+
+            <img src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800">
+
+        </div>
+        </section>
+
+    
+<section class="services">
+
+    <h2 id="howItWorksTitle">How it Works</h2>
+
+    <div class="cards">
+       <div class="card" id="step1">1. Upload Crop Image</div>
+       <div class="card" id="step2">2. AI Detects Disease</div>
+       <div class="card" id="step3">3. Shows Result</div>
+       <div class="card" id="step4">4. Suggests Treatment + Prevention</div>
+
+    </div>
+
+</section>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+
+    <section class="services">
+
+        <h2 id="coreServicesTitle">Core AI Services</h2>
+
+        <div class="cards">
+
+            <div class="card" id="service1">🦠 Disease Detection</div>
+
+            <div class="card" id="service2">⚠️ Infection Level</div>
+
+            <div class="card" id="service3">💊 Treatment Advisory</div>
+
+            <div class="card" id="service4">🎙 Kisan Vani</div>
+
+        </div>
+
+    </section>
+
+    <section class="services">
+
+        <h2 id="farmerServicesTitle">Farmer Services</h2>
+
+        <div class="cards">
+
+            <div class="card" id="farmer1" onclick="viewHistory()">
+                📜 Diagnosis Records</div>
+
+            <div class="card" id="farmer2" onclick="window.location.href='market.html'">
+    📈 Market Prices
+</div>
+
+            <div class="card" id="farmer3" onclick="window.location.href='pmkisan.html'">
+    🌾 PM-KISAN Samman Nidhi Yojana
+</div>
+
+            <div class="card" id="farmer4" onclick="window.location.href='weather.html'">
+    🌦 Weather Updates
+</div>
+            
+            <div class="card" id="farmer5">
+        📞 Kisan Helpline
+        <br>
+        1800-180-1551
+        </div>
+</div>
+    </section>
+   <script>
+let stream;
+
+async function openCamera() {
+    const cameraBox = document.getElementById("cameraBox");
+    const video = document.getElementById("video");
+
+    cameraBox.style.display = "block";
+    document.getElementById("captureBtn").style.display = "inline-block";
+
+    stream = await navigator.mediaDevices.getUserMedia({
+        video: true
+    });
+
+    video.srcObject = stream;
+}
+function captureImage() {
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const preview = document.getElementById("previewImage");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    const imageData = canvas.toDataURL("image/png");
+
+    localStorage.setItem("uploadedImage", imageData);
+
+    preview.src = imageData;
+    preview.style.display = "block";
+
+    if(stream){
+        stream.getTracks().forEach(track => track.stop());
+    }
+
+    document.getElementById("loadingMessage").style.display = "block";
+
+    canvas.toBlob(function(blob){
+
+        const formData = new FormData();
+        formData.append("image", blob, "capture.png");
+
+        fetch("http://192.168.0.173:5000/predict", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            document.getElementById("loadingMessage").style.display = "none";
+
+            localStorage.setItem("disease",
+                data.disease || "Unknown Disease");
+
+            localStorage.setItem("symptoms",
+                data.symptoms || "No visible symptoms detected");
+
+            localStorage.setItem("treatment",
+                data.treatment || "No treatment available");
+
+            localStorage.setItem("prevention",
+                data.prevention || "No prevention available");
+
+            window.location.href = "result.html";
+        })
+        .catch(error => {
+
+            console.error(error);
+
+            document.getElementById("loadingMessage").style.display = "none";
+
+            alert("Unable to connect to backend");
+        });
+
+    }, "image/png");
+}
+document.getElementById("fileInput").addEventListener("change", function(event){
+
+    const file = event.target.files[0];
+
+    if(file){
+
+        const reader = new FileReader();
+
+        reader.onload = function(e){
+
+            const preview =
+            document.getElementById("previewImage");
+
+            preview.src = e.target.result;
+            preview.style.display = "block";
+          localStorage.setItem("uploadedImage", e.target.result);
+          console.log("Image saved successfully");
+console.log(localStorage.getItem("uploadedImage"));
+
+document.getElementById("loadingMessage").style.display = "block";
+
+const formData = new FormData();
+formData.append("image", file);
+
+fetch("http://192.168.0.173:5000/predict", {
+    method: "POST",
+    body: formData
+})
+.then(response => response.json())
+.then(data => {
+
+document.getElementById("loadingMessage").style.display = "none";
+    localStorage.setItem("disease", data.disease||"Unknown Disease");
+    localStorage.setItem("treatment", data.treatment||"No Treatment Available");
+    localStorage.setItem("prevention", data.prevention||"No Prevention Available");
+    localStorage.setItem("symptoms", data.symptoms||"No visible symptoms detected");
+    
+
+    window.location.href = "result.html";
+});
+        }
+
+        reader.readAsDataURL(file);
+    }
+});
+
+function viewHistory(){
+
+document.getElementById("loadingMessage").style.display="block";
+
+fetch("http://192.168.0.173:5000/history")
+
+.then(response=>response.json())
+
+.then(data=>{
+
+document.getElementById("loadingMessage").style.display="none";
+
+localStorage.setItem("historyData",JSON.stringify(data));
+
+window.location.href="history.html";
+
+})
+
+.catch(error=>{
+
+console.error(error);
+
+document.getElementById("loadingMessage").style.display="none";
+
+alert("Unable to fetch history.");
+
+});
+
+}
+</script>
+
+ <footer>
+
+    <p id="footerTitle">
+        Fasal Sanjeevani © 2026
+    </p>
+
+    <p id="footerDesc">
+        AI-powered solution for farmers
+    </p>
+
+</footer>
+
+</body>
+
+</html>
+<script>
+
+const translations = {
+
+en: {
+
+tagline:"Your Crop's Health, Our AI's Priority",
+
+heroTitle:"Protecting Crops, Empowering Farmers",
+
+mainLine:"Detect Early, Protect Better, Harvest More.",
+
+heroDescription:"Detect crop diseases early with timely alerts and smart monitoring. Act quickly to protect crops and improve yield and harvest quality.",
+
+scanBtn:"📷 Scan Crop",
+
+uploadBtn:"🖼️ Upload Image",
+captureBtn: "Capture",
+
+loadingMessage:"🔍 Analyzing Crop Image...",
+
+howItWorksTitle:"How it Works",
+
+step1:"1. Upload Crop Image",
+
+step2:"2. AI Detects Disease",
+
+step3:"3. Shows Result",
+
+step4:"4. Suggests Treatment + Prevention",
+
+coreServicesTitle:"Core AI Services",
+
+service1:"🦠 Disease Detection",
+
+service2:"⚠️ Infection Level",
+
+service3:"💊 Treatment Advisory",
+
+service4:"🎙 Kisan Vani",
+
+farmerServicesTitle:"Farmer Services",
+
+farmer1:"📜 Diagnosis Records",
+
+farmer2:"📈 Market Prices",
+
+farmer3:"🌾 PM-KISAN Samman Nidhi Yojana",
+
+farmer4:"🌦 Weather Updates",
+
+farmer5:"📞 Kisan Helpline\n1800-180-1551",
+
+footerTitle:"Fasal Sanjeevani © 2026",
+
+footerDesc:"AI-powered solution for farmers"
+
+},
+
+hi: {
+
+tagline:"आपकी फसल का स्वास्थ्य, हमारी AI की प्राथमिकता",
+
+heroTitle:"फसलों की सुरक्षा, किसानों का सशक्तिकरण",
+
+mainLine:"जल्दी पहचानें, बेहतर सुरक्षा करें, अधिक उत्पादन पाएं।",
+
+heroDescription:"स्मार्ट AI तकनीक की मदद से फसल रोगों का समय रहते पता लगाएँ। फसलों की सुरक्षा करें और बेहतर उत्पादन प्राप्त करें।",
+
+scanBtn:"📷 फसल स्कैन करें",
+
+uploadBtn:"🖼️ तस्वीर अपलोड करें",
+captureBtn: "फोटो लें",
+
+loadingMessage:"🔍 विश्लेषण किया जा रहा है...",
+
+
+howItWorksTitle:"यह कैसे काम करता है",
+
+step1:"1. फसल की तस्वीर अपलोड करें",
+
+step2:"2. AI रोग की पहचान करता है",
+
+step3:"3. परिणाम दिखाता है",
+
+step4:"4. उपचार और बचाव बताता है",
+
+coreServicesTitle:"मुख्य AI सेवाएँ",
+
+service1:"🦠 रोग पहचान",
+
+service2:"⚠️ संक्रमण स्तर",
+
+service3:"💊 उपचार सलाह",
+
+service4:"🎙 किसान वाणी",
+
+farmerServicesTitle:"किसान सेवाएँ",
+
+farmer1:"📜 निदान रिकॉर्ड",
+
+farmer2:"📈 मंडी भाव",
+
+farmer3:"🌾 पीएम किसान सम्मान निधि योजना",
+
+farmer4:"🌦 मौसम अपडेट",
+
+farmer5:"📞 किसान हेल्पलाइन\n1800-180-1551",
+
+footerTitle:"फसल संजीवनी © 2026",
+
+footerDesc:"किसानों के लिए AI आधारित समाधान"
+
+}
+
+};
+function showHelpline(){
+
+    alert(
+`किसान हेल्पलाइन
+1800-180-1551
+
+For crop-related guidance and support.`
+    );
+
+}
+
+function changeLanguage(lang){
+
+for(let key in translations[lang]){
+
+let element = document.getElementById(key);
+
+if(element){
+element.innerText = translations[lang][key];
+}
+
+}
+document.getElementById("loadingMessage").innerText =
+translations[lang].loadingMessage;
+
+
+localStorage.setItem("language", lang);
+
+}
+
+window.onload = function(){
+
+let savedLanguage =
+localStorage.getItem("language") || "en";
+
+changeLanguage(savedLanguage);
+
+};
+
+</script>

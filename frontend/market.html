@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Market Prices</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Merienda:wght@700&display=swap"
+rel="stylesheet">
+
+</head>
+
+<body>
+
+<header>
+
+<img src="images/logo.png" class="logo">
+
+<h2>फसल संजीवनी</h2>
+
+<p class="tagline">
+Market Prices
+</p>
+
+</header>
+
+<section class="result-box">
+
+<h1 style="text-align:center;color:#2E7D32;margin-bottom:30px;">
+
+📈 Live Market Prices
+
+</h1>
+
+<div style="text-align:center;">
+
+<input
+id="cropInput"
+type="text"
+placeholder="Enter Crop Name"
+style="padding:12px;width:300px;border-radius:8px;border:1px solid #ccc;font-size:16px;">
+
+<br><br>
+
+<button onclick="getMarketPrice()">
+
+Get Market Price
+
+</button>
+
+</div>
+
+<br>
+
+<div id="report" style="display:none;">
+
+<div class="info-card">
+
+<p>
+
+<strong>🌾 Crop</strong>
+
+<br>
+
+<span id="crop"></span>
+
+</p>
+
+</div>
+
+<div class="info-card">
+
+<p>
+
+<strong>💰 Price</strong>
+
+<br>
+
+<span id="price"></span>
+
+</p>
+
+</div>
+
+<div class="info-card">
+
+<p>
+
+<strong>📊 Market Trend</strong>
+
+<br>
+
+<span id="trend"></span>
+
+</p>
+
+</div>
+
+<div class="info-card">
+
+<p>
+
+<strong>💡 Decision</strong>
+
+<br>
+
+<span id="decision"></span>
+
+</p>
+
+</div>
+
+</div>
+
+<div style="text-align:center;margin-top:30px;">
+
+<button onclick="window.location.href='index.html'">
+
+⬅ Back to Home
+
+</button>
+
+</div>
+
+</section>
+
+<script>
+
+function getMarketPrice(){
+
+const crop=document.getElementById("cropInput").value.trim();
+
+if(crop===""){
+
+alert("Please enter crop name.");
+
+return;
+
+}
+
+fetch(`http://192.168.0.173:5000/mandi-rate?crop=${encodeURIComponent(crop)}`)
+
+.then(response=>response.json())
+
+.then(data=>{
+
+document.getElementById("report").style.display="block";
+
+document.getElementById("crop").innerHTML=data.crop;
+
+document.getElementById("price").innerHTML=
+"₹ "+data.mandi_price_per_quintal+" / Quintal";
+
+document.getElementById("trend").innerHTML=
+data.market_trend;
+
+document.getElementById("decision").innerHTML=
+data.decision;
+
+})
+
+.catch(error=>{
+
+console.log(error);
+
+alert("Unable to fetch market prices.");
+
+});
+
+}
+
+</script>
+
+</body>
+
+</html>

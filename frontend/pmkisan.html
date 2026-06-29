@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>PM-KISAN Eligibility</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Merienda:wght@700&display=swap"
+rel="stylesheet">
+
+</head>
+
+<body>
+
+<header>
+
+<img src="images/logo.png" class="logo">
+
+<h2>फसल संजीवनी</h2>
+
+<p class="tagline">
+
+🌾 PM-KISAN Eligibility Checker
+
+</p>
+
+</header>
+
+<section class="result-box">
+
+<h1 style="text-align:center;color:#2E7D32;">
+
+PM-KISAN Eligibility
+
+</h1>
+
+<br>
+
+<div style="text-align:center;">
+
+<select id="farmerType"
+style="padding:12px;width:300px;border-radius:8px;font-size:16px;">
+
+<option value="small">Small Farmer</option>
+<option value="marginal">Marginal Farmer</option>
+<option value="large">Large Farmer</option>
+
+</select>
+
+<br><br>
+
+<input
+type="number"
+id="landSize"
+placeholder="Land Size (Acres)"
+style="padding:12px;width:300px;border-radius:8px;">
+
+<br><br>
+
+<input
+type="number"
+id="income"
+placeholder="Annual Income"
+style="padding:12px;width:300px;border-radius:8px;">
+
+<br><br>
+
+<button onclick="checkEligibility()">
+
+Check Eligibility
+
+</button>
+
+</div>
+
+<br>
+
+<div id="report" style="display:none;">
+
+    <div class="info-card">
+<p>
+<strong>Land Size</strong><br>
+<span id="land"></span>
+</p>
+</div>
+
+<div class="info-card">
+<p>
+<strong>Farmer Type</strong><br>
+<span id="farmerTypeValue"></span>
+</p>
+</div>
+<div class="info-card">
+
+<p>
+
+<strong>Eligibility</strong>
+
+<br>
+
+<span id="eligible"></span>
+
+</p>
+
+</div>
+
+<div class="info-card">
+
+<p>
+
+<strong>Eligible Schemes</strong>
+
+<br>
+
+<ul id="schemes"></ul>
+
+</p>
+
+</div>
+
+<div class="info-card">
+
+<p>
+
+<strong>How to Check PM-KISAN Status</strong>
+
+<br>
+
+<ol id="steps"></ol>
+
+</p>
+
+</div>
+
+<div class="info-card">
+
+<p>
+
+<strong>Official Website</strong>
+
+<br>
+
+<a id="website" target="_blank"></a>
+
+</p>
+
+</div>
+
+</div>
+
+<div style="text-align:center;margin-top:30px;">
+
+<button onclick="window.location.href='index.html'">
+
+⬅ Back to Home
+
+</button>
+
+</div>
+
+</section>
+
+<script>
+
+function checkEligibility(){
+
+const farmerType=document.getElementById("farmerType").value;
+const landSize=document.getElementById("landSize").value;
+const income=document.getElementById("income").value;
+
+fetch(`http://192.168.0.173:5000/scheme-check?land_size=${landSize}&income=${income}&farmer_type=${farmerType}`)
+.then(async response => {
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText);
+    }
+    return response.json();
+})
+.then(data => {
+    console.log("DATA:", data);
+
+    document.getElementById("report").style.display = "block";
+
+    document.getElementById("eligible").innerHTML =
+        data.pm_kisan.eligible ? "✅ Eligible" : "❌ Not Eligible";
+
+    document.getElementById("land").innerHTML =
+        data.input.land_size + " Acres";
+
+    document.getElementById("farmerTypeValue").innerHTML =
+        data.input.farmer_type;
+
+    const scheme = document.getElementById("schemes");
+    scheme.innerHTML = "";
+    data.eligible_schemes.forEach(item => {
+        scheme.innerHTML += `<li>${item}</li>`;
+    });
+
+    const steps = document.getElementById("steps");
+    steps.innerHTML = "";
+    data.pm_kisan.how_to_check.forEach(step => {
+        steps.innerHTML += `<li>${step}</li>`;
+    });
+
+    document.getElementById("website").href =
+        data.pm_kisan.official_website;
+
+    document.getElementById("website").innerHTML =
+        data.pm_kisan.official_website;
+
+})
+.catch(error => {
+    console.log("ERROR:", error);
+    alert("Backend error: check console or Flask terminal");
+});
+
+
+}
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Health Report</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <img src="images/logo.png" class="logo">
+    <h2>फसल संजीवनी</h2>
+</header>
+
+<div class="language-switcher">
+    <button onclick="changeLanguage('en')">English</button>
+    <button onclick="changeLanguage('hi')">हिन्दी</button>
+</div>
+
+<section class="result-box">
+
+```
+<h3 id="uploadedImageTitle">
+    Uploaded Crop Image
+</h3>
+
+<img id="cropImage"
+     style="max-width:400px;
+            border-radius:15px;
+            margin-bottom:20px;">
+
+<h1 id="reportTitle">
+    🌱 Crop Health Report
+</h1>
+
+<button id="speakBtn" onclick="speakReport()">
+    🎙 Listen Report
+</button>
+
+<p>
+    <strong id="diseaseLabel">Disease:</strong>
+    <span id="disease"></span>
+</p>
+
+<p>
+    <strong id="symptomLabel">Symptoms:</strong>
+    <span id="symptoms"></span>
+</p>
+
+<p>
+    <strong id="treatmentLabel">Treatment:</strong>
+    <span id="treatment"></span>
+</p>
+
+<p>
+    <strong id="preventionLabel">Prevention:</strong>
+    <span id="prevention"></span>
+</p>
+```
+
+</section>
+
+<script>
+
+const img = localStorage.getItem("uploadedImage");
+
+if(img){
+    document.getElementById("cropImage").src = img;
+}
+
+document.getElementById("disease").innerText =
+localStorage.getItem("disease");
+
+document.getElementById("symptoms").innerText =
+localStorage.getItem("symptoms");
+
+document.getElementById("treatment").innerText =
+localStorage.getItem("treatment");
+
+document.getElementById("prevention").innerText =
+localStorage.getItem("prevention");
+
+const resultTranslations = {
+
+    en: {
+        uploadedImageTitle: "Uploaded Crop Image",
+        reportTitle: "🌱 Crop Health Report",
+        speakBtn: "🎙 Listen Report",
+        diseaseLabel: "Disease:",
+        symptomLabel: "Symptoms:",
+        treatmentLabel: "Treatment:",
+        preventionLabel: "Prevention:"
+    },
+
+    hi: {
+        uploadedImageTitle: "अपलोड की गई फसल की तस्वीर",
+        reportTitle: "🌱 फसल स्वास्थ्य रिपोर्ट",
+        speakBtn: "🎙 रिपोर्ट सुनें",
+        diseaseLabel: "रोग:",
+        symptomLabel: "प्रमुख लक्षण:",
+        treatmentLabel: "उपचार:",
+        preventionLabel: "बचाव:"
+    }
+};
+
+function changeLanguage(lang){
+
+    for(let key in resultTranslations[lang]){
+
+        const element = document.getElementById(key);
+
+        if(element){
+            element.innerText = resultTranslations[lang][key];
+        }
+    }
+
+    localStorage.setItem("language", lang);
+
+    translateDisease(lang);
+}
+
+function translateDisease(lang){
+
+    const diseaseElement =
+    document.getElementById("disease");
+
+    const disease =
+    localStorage.getItem("disease");
+
+    if(lang === "hi"){
+
+        const diseaseMap = {
+
+            "Leaf Blight":"पत्ती झुलसा रोग",
+            "Early Blight":"प्रारंभिक झुलसा रोग",
+            "Bacterial Spot":"जीवाणु धब्बा रोग",
+            "Healthy":"स्वस्थ फसल"
+        };
+
+        diseaseElement.innerText =
+        diseaseMap[disease] || disease;
+
+    }else{
+
+        diseaseElement.innerText = disease;
+    }
+}
+
+function speakReport(){
+
+    const lang =
+    localStorage.getItem("language") || "en";
+
+    const text =
+        document.getElementById("reportTitle").innerText + ". " +
+
+        document.getElementById("diseaseLabel").innerText + " " +
+        document.getElementById("disease").innerText + ". " +
+
+        document.getElementById("symptomLabel").innerText + " " +
+        document.getElementById("symptoms").innerText + ". " +
+
+        document.getElementById("treatmentLabel").innerText + " " +
+        document.getElementById("treatment").innerText + ". " +
+
+        document.getElementById("preventionLabel").innerText + " " +
+        document.getElementById("prevention").innerText;
+
+    const speech =
+    new SpeechSynthesisUtterance(text);
+
+    speech.lang =
+    (lang === "hi") ? "hi-IN" : "en-US";
+
+    speech.rate = 1;
+
+    speechSynthesis.speak(speech);
+}
+
+window.onload = function(){
+
+    const savedLanguage =
+    localStorage.getItem("language") || "en";
+
+    changeLanguage(savedLanguage);
+};
+
+</script>
+
+</body>
+</html>
