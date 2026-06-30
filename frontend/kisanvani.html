@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kisan Vani AI</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #f4f7f4;
+}
+
+/* Floating button */
+#chatBtn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #2E7D32;
+    color: white;
+    border: none;
+    padding: 15px 18px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+
+/* Chat box */
+#chatBox {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 320px;
+    height: 420px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#chatHeader {
+    background: #2E7D32;
+    color: white;
+    padding: 10px;
+    font-weight: bold;
+}
+
+#messages {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.msg {
+    margin: 8px 0;
+    padding: 8px;
+    border-radius: 10px;
+    max-width: 80%;
+}
+
+.user {
+    background: #DCF8C6;
+    align-self: flex-end;
+    text-align: right;
+}
+
+.bot {
+    background: #f1f1f1;
+}
+
+#inputBox {
+    display: flex;
+    border-top: 1px solid #ddd;
+}
+
+#text {
+    flex: 1;
+    padding: 10px;
+    border: none;
+}
+
+#send {
+    background: #2E7D32;
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+ <div style="position:fixed; top:10px; right:20px;">
+    <button onclick="setLang('en')">English</button>
+    <button onclick="setLang('hi')">हिन्दी</button>
+</div>
+<button id="chatBtn" onclick="toggleChat()">🤖</button>
+
+<div id="chatBox">
+    <div id="chatHeader">🌾 Kisan Vani AI Assistant</div>
+
+    <div id="messages"></div>
+
+    <div id="inputBox">
+        <input id="text" placeholder="Ask about crops..." />
+        <button id="send" onclick="sendMsg()">Send</button>
+    </div>
+</div>
+
+<script>
+    window.onload = function(){
+    addMessage("🌾 Namaste! I am Kisan Vani AI. Ask me about crops, diseases, fertilizers.", "bot");
+}
+function toggleChat(){
+    let box = document.getElementById("chatBox");
+    box.style.display = box.style.display === "flex" ? "none" : "flex";
+    box.style.flexDirection = "column";
+}
+
+function addMessage(text, type){
+    let div = document.createElement("div");
+    div.className = "msg " + type;
+    div.innerText = text;
+    document.getElementById("messages").appendChild(div);
+
+    document.getElementById("messages").scrollTop =
+    document.getElementById("messages").scrollHeight;
+}
+function sendMsg(){
+
+let input = document.getElementById("text");
+let msg = input.value;
+if(!msg) return;
+
+addMessage(msg, "user");
+input.value = "";
+
+/* 🔥 SHOW LOADING */
+addMessage("Kisan Vani is thinking...", "bot");
+
+/* BACKEND CALL */
+fetch("http://10.226.123.88:5000/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+        message: msg,
+        lang: currentLang})
+})
+.then(res => res.json())
+.then(data => {
+
+    /* remove last "thinking..." message */
+    let msgs = document.getElementById("messages");
+    msgs.removeChild(msgs.lastChild);
+
+    addMessage(data.reply, "bot");
+    if(data.reply){
+    speak(data.reply, currentLang);
+}
+
+})
+.catch(err => {
+    let msgs = document.getElementById("messages");
+    msgs.removeChild(msgs.lastChild);
+
+    addMessage("⚠️ Backend not connected. Please try later.", "bot");
+});
+
+}
+function speak(text, lang = "en"){
+    let speech = new SpeechSynthesisUtterance();
+
+    speech.text = text;
+
+    // language setting
+    if(lang === "hi"){
+        speech.lang = "hi-IN";
+    } else {
+        speech.lang = "en-US";
+    }
+
+    speech.rate = 1;
+    speech.pitch = 1;
+
+    window.speechSynthesis.speak(speech);
+}
+let currentLang = "en";
+
+function setLang(lang){
+    currentLang = lang;
+
+    if(lang === "hi"){
+        addMessage("🌾 भाषा बदलकर हिंदी कर दी गई है", "bot");
+    } else {
+        addMessage("🌾 Language switched to English", "bot");
+    }
+}
+</script>
+</body>
+</html>

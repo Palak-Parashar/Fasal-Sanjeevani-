@@ -490,3 +490,63 @@ font-size:22px;
 font-weight:bold;
 
 }
+#chatBtn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #2E7D32;
+    color: white;
+    border: none;
+    padding: 15px 18px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1000;
+}
+
+#chatBox {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 320px;
+    height: 420px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000;
+}
+
+#chatHeader {
+    background: #2E7D32;
+    color: white;
+    padding: 10px;
+    font-weight: bold;
+}
+
+#messages {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+#inputBox {
+    display: flex;
+    border-top: 1px solid #ddd;
+}
+
+#text {
+    flex: 1;
+    padding: 10px;
+    border: none;
+}
+
+#send {
+    background: #2E7D32;
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+}

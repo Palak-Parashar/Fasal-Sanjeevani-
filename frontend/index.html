@@ -16,6 +16,7 @@
 <body>
 
     <header>
+<div>
 
         <img src="images/logo.png" class="logo">
 
@@ -28,6 +29,7 @@
     <button onclick="changeLanguage('en')">English</button>
     <button onclick="changeLanguage('hi')">हिन्दी</button>
 </div>
+
     </header>
 
     <section class="hero">
@@ -126,8 +128,6 @@
 
             <div class="card" id="service3">💊 Treatment Advisory</div>
 
-            <div class="card" id="service4">🎙 Kisan Vani</div>
-
         </div>
 
     </section>
@@ -137,7 +137,6 @@
         <h2 id="farmerServicesTitle">Farmer Services</h2>
 
         <div class="cards">
-
             <div class="card" id="farmer1" onclick="viewHistory()">
                 📜 Diagnosis Records</div>
 
@@ -160,27 +159,44 @@
         </div>
 </div>
     </section>
-   <script>
+    <!-- 🤖 KISAN VANI CHAT BUTTON -->
+<button id="chatBtn" onclick="toggleChat()">🤖</button>
+
+<!-- 💬 CHAT BOX -->
+<div id="chatBox">
+    <div id="chatHeader">🌾 Kisan Vani AI Assistant</div>
+
+    <div id="messages"></div>
+
+    <div id="inputBox">
+        <input id="text" placeholder="Ask about crops..." />
+        <button id="send" onclick="sendMsg()">Send</button>
+    </div>
+</div>
+<script>
 let stream;
+const BACKEND_URL = "http://10.226.123.88:5000";
+let currentLang = "en";
+
+/* ---------------- CAMERA ---------------- */
 
 async function openCamera() {
-    const cameraBox = document.getElementById("cameraBox");
     const video = document.getElementById("video");
 
-    cameraBox.style.display = "block";
     document.getElementById("captureBtn").style.display = "inline-block";
 
-    stream = await navigator.mediaDevices.getUserMedia({
-        video: true
-    });
-
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
 }
-function captureImage() {
 
+function captureImage() {
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
-    const preview = document.getElementById("previewImage");
+
+    if (!video.videoWidth) {
+        alert("Camera not ready yet");
+        return;
+    }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -188,133 +204,212 @@ function captureImage() {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0);
 
-    const imageData = canvas.toDataURL("image/png");
-
-    localStorage.setItem("uploadedImage", imageData);
-
-    preview.src = imageData;
-    preview.style.display = "block";
-
-    if(stream){
-        stream.getTracks().forEach(track => track.stop());
-    }
-
     document.getElementById("loadingMessage").style.display = "block";
 
-    canvas.toBlob(function(blob){
+    canvas.toBlob(function(blob) {
 
         const formData = new FormData();
         formData.append("image", blob, "capture.png");
 
-        fetch("http://192.168.0.173:5000/predict", {
+        fetch(`${BACKEND_URL}/predict`, {
             method: "POST",
             body: formData
         })
-        .then(response => response.json())
+        .then(async (res) => {
+
+            if (!res.ok) {
+                throw new Error("Server error: " + res.status);
+            }
+
+            return await res.json();
+        })
         .then(data => {
 
             document.getElementById("loadingMessage").style.display = "none";
 
-            localStorage.setItem("disease",
-                data.disease || "Unknown Disease");
+            localStorage.setItem("disease", data.disease || "Unknown");
+            localStorage.setItem("symptoms", data.symptoms || "");
+            localStorage.setItem("treatment", data.treatment || "");
+            localStorage.setItem("prevention", data.prevention || "");
 
-            localStorage.setItem("symptoms",
-                data.symptoms || "No visible symptoms detected");
-
-            localStorage.setItem("treatment",
-                data.treatment || "No treatment available");
-
-            localStorage.setItem("prevention",
-                data.prevention || "No prevention available");
+            // stop camera AFTER upload success
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop());
+            }
 
             window.location.href = "result.html";
         })
-        .catch(error => {
-
-            console.error(error);
+        .catch(err => {
 
             document.getElementById("loadingMessage").style.display = "none";
 
-            alert("Unable to connect to backend");
+            console.error("UPLOAD ERROR:", err);
+            alert("Image upload failed. Check backend or IP.");
         });
 
     }, "image/png");
 }
-document.getElementById("fileInput").addEventListener("change", function(event){
+/* ---------------- FILE UPLOAD ---------------- */
+
+document.getElementById("fileInput").addEventListener("change", function(event) {
 
     const file = event.target.files[0];
+    if (!file) return;
 
-    if(file){
+    const formData = new FormData();
+    formData.append("image", file);
+    const reader = new FileReader();
 
-        const reader = new FileReader();
+reader.onload = function(e) {
+    const preview = document.getElementById("previewImage");
+    preview.src = e.target.result;
+    preview.style.display = "block";
+};
 
-        reader.onload = function(e){
+reader.readAsDataURL(file);
 
-            const preview =
-            document.getElementById("previewImage");
+    document.getElementById("loadingMessage").style.display = "block";
 
-            preview.src = e.target.result;
-            preview.style.display = "block";
-          localStorage.setItem("uploadedImage", e.target.result);
-          console.log("Image saved successfully");
-console.log(localStorage.getItem("uploadedImage"));
+    fetch(`${BACKEND_URL}/predict`, {
+        method: "POST",
+        body: formData
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Server error " + res.status);
+        return res.json();
+    })
+    .then(data => {
 
-document.getElementById("loadingMessage").style.display = "block";
+        document.getElementById("loadingMessage").style.display = "none";
 
-const formData = new FormData();
-formData.append("image", file);
+        localStorage.setItem("disease", data.disease || "Unknown");
+        localStorage.setItem("symptoms", data.symptoms || "");
+        localStorage.setItem("treatment", data.treatment || "");
+        localStorage.setItem("prevention", data.prevention || "");
 
-fetch("http://192.168.0.173:5000/predict", {
-    method: "POST",
-    body: formData
-})
-.then(response => response.json())
-.then(data => {
-
-document.getElementById("loadingMessage").style.display = "none";
-    localStorage.setItem("disease", data.disease||"Unknown Disease");
-    localStorage.setItem("treatment", data.treatment||"No Treatment Available");
-    localStorage.setItem("prevention", data.prevention||"No Prevention Available");
-    localStorage.setItem("symptoms", data.symptoms||"No visible symptoms detected");
-    
-
-    window.location.href = "result.html";
-});
-        }
-
-        reader.readAsDataURL(file);
-    }
-});
-
-function viewHistory(){
-
-document.getElementById("loadingMessage").style.display="block";
-
-fetch("http://192.168.0.173:5000/history")
-
-.then(response=>response.json())
-
-.then(data=>{
-
-document.getElementById("loadingMessage").style.display="none";
-
-localStorage.setItem("historyData",JSON.stringify(data));
-
-window.location.href="history.html";
-
-})
-
-.catch(error=>{
-
-console.error(error);
-
-document.getElementById("loadingMessage").style.display="none";
-
-alert("Unable to fetch history.");
-
+        window.location.href = "result.html";
+    })
+    .catch(err => {
+        document.getElementById("loadingMessage").style.display = "none";
+        console.error(err);
+        alert("Backend not reachable");
+    });
 });
 
+/* ---------------- HISTORY ---------------- */
+
+function viewHistory() {
+
+    document.getElementById("loadingMessage").style.display = "block";
+
+    fetch(`${BACKEND_URL}/history`)
+        .then(res => res.json())
+        .then(data => {
+
+            document.getElementById("loadingMessage").style.display = "none";
+
+            localStorage.setItem("historyData", JSON.stringify(data));
+            window.location.href = "history.html";
+        })
+        .catch(err => {
+            document.getElementById("loadingMessage").style.display = "none";
+            alert("Unable to fetch history");
+            console.error(err);
+        });
 }
+
+/* ---------------- CHAT ---------------- */
+
+function toggleChat() {
+    let box = document.getElementById("chatBox");
+    box.style.display = box.style.display === "flex" ? "none" : "flex";
+    box.style.flexDirection = "column";
+}
+
+function sendMsg() {
+
+    let input = document.getElementById("text");
+    let msg = input.value.trim();
+    if (!msg) return;
+
+    addMessage(msg, "user");
+    input.value = "";
+
+    addMessage("Thinking...", "bot");
+
+    fetch(`${BACKEND_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            message: msg,
+            lang: currentLang
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const msgs = document.getElementById("messages");
+        if (msgs.lastChild) msgs.removeChild(msgs.lastChild);
+        addMessage(data.reply || "No response", "bot");
+    })
+    .catch(err => {
+        const msgs = document.getElementById("messages");
+        if (msgs.lastChild) msgs.removeChild(msgs.lastChild);
+        addMessage("Backend not connected", "bot");
+        console.error(err);
+    });
+}
+
+function addMessage(text, type) {
+    let div = document.createElement("div");
+    div.className = "msg " + type;
+    div.innerText = text;
+
+    document.getElementById("messages").appendChild(div);
+
+    let box = document.getElementById("messages");
+    box.scrollTop = box.scrollHeight;
+}
+
+/* ---------------- LANGUAGE ---------------- */
+
+const translations = {
+    en: {
+        tagline: "Your Crop's Health, Our AI's Priority",
+        heroTitle: "Protecting Crops, Empowering Farmers",
+        mainLine: "Detect Early, Protect Better, Harvest More.",
+        heroDescription: "Detect crop diseases early with timely alerts.",
+        scanBtn: "📷 Scan Crop",
+        uploadBtn: "🖼️ Upload Image",
+        loadingMessage: "🔍 Analyzing Crop Image..."
+    },
+    hi: {
+        tagline: "आपकी फसल का स्वास्थ्य, हमारी AI की प्राथमिकता",
+        heroTitle: "फसलों की सुरक्षा, किसानों का सशक्तिकरण",
+        mainLine: "जल्दी पहचानें, बेहतर सुरक्षा करें।",
+        heroDescription: "AI से फसल रोग पहचानें।",
+        scanBtn: "📷 फसल स्कैन करें",
+        uploadBtn: "🖼️ तस्वीर अपलोड करें",
+        loadingMessage: "🔍 विश्लेषण किया जा रहा है..."
+    }
+};
+
+function changeLanguage(lang) {
+
+    for (let key in translations[lang]) {
+        let el = document.getElementById(key);
+        if (el) el.innerText = translations[lang][key];
+    }
+
+    document.getElementById("loadingMessage").innerText =
+        translations[lang].loadingMessage;
+
+    localStorage.setItem("language", lang);
+}
+
+window.onload = function () {
+    let saved = localStorage.getItem("language") || "en";
+    changeLanguage(saved);
+};
 </script>
 
  <footer>
@@ -326,6 +421,7 @@ alert("Unable to fetch history.");
     <p id="footerDesc">
         AI-powered solution for farmers
     </p>
+    
 
 </footer>
 
@@ -334,120 +430,6 @@ alert("Unable to fetch history.");
 </html>
 <script>
 
-const translations = {
-
-en: {
-
-tagline:"Your Crop's Health, Our AI's Priority",
-
-heroTitle:"Protecting Crops, Empowering Farmers",
-
-mainLine:"Detect Early, Protect Better, Harvest More.",
-
-heroDescription:"Detect crop diseases early with timely alerts and smart monitoring. Act quickly to protect crops and improve yield and harvest quality.",
-
-scanBtn:"📷 Scan Crop",
-
-uploadBtn:"🖼️ Upload Image",
-captureBtn: "Capture",
-
-loadingMessage:"🔍 Analyzing Crop Image...",
-
-howItWorksTitle:"How it Works",
-
-step1:"1. Upload Crop Image",
-
-step2:"2. AI Detects Disease",
-
-step3:"3. Shows Result",
-
-step4:"4. Suggests Treatment + Prevention",
-
-coreServicesTitle:"Core AI Services",
-
-service1:"🦠 Disease Detection",
-
-service2:"⚠️ Infection Level",
-
-service3:"💊 Treatment Advisory",
-
-service4:"🎙 Kisan Vani",
-
-farmerServicesTitle:"Farmer Services",
-
-farmer1:"📜 Diagnosis Records",
-
-farmer2:"📈 Market Prices",
-
-farmer3:"🌾 PM-KISAN Samman Nidhi Yojana",
-
-farmer4:"🌦 Weather Updates",
-
-farmer5:"📞 Kisan Helpline\n1800-180-1551",
-
-footerTitle:"Fasal Sanjeevani © 2026",
-
-footerDesc:"AI-powered solution for farmers"
-
-},
-
-hi: {
-
-tagline:"आपकी फसल का स्वास्थ्य, हमारी AI की प्राथमिकता",
-
-heroTitle:"फसलों की सुरक्षा, किसानों का सशक्तिकरण",
-
-mainLine:"जल्दी पहचानें, बेहतर सुरक्षा करें, अधिक उत्पादन पाएं।",
-
-heroDescription:"स्मार्ट AI तकनीक की मदद से फसल रोगों का समय रहते पता लगाएँ। फसलों की सुरक्षा करें और बेहतर उत्पादन प्राप्त करें।",
-
-scanBtn:"📷 फसल स्कैन करें",
-
-uploadBtn:"🖼️ तस्वीर अपलोड करें",
-captureBtn: "फोटो लें",
-
-loadingMessage:"🔍 विश्लेषण किया जा रहा है...",
-
-
-howItWorksTitle:"यह कैसे काम करता है",
-
-step1:"1. फसल की तस्वीर अपलोड करें",
-
-step2:"2. AI रोग की पहचान करता है",
-
-step3:"3. परिणाम दिखाता है",
-
-step4:"4. उपचार और बचाव बताता है",
-
-coreServicesTitle:"मुख्य AI सेवाएँ",
-
-service1:"🦠 रोग पहचान",
-
-service2:"⚠️ संक्रमण स्तर",
-
-service3:"💊 उपचार सलाह",
-
-service4:"🎙 किसान वाणी",
-
-farmerServicesTitle:"किसान सेवाएँ",
-
-farmer1:"📜 निदान रिकॉर्ड",
-
-farmer2:"📈 मंडी भाव",
-
-farmer3:"🌾 पीएम किसान सम्मान निधि योजना",
-
-farmer4:"🌦 मौसम अपडेट",
-
-farmer5:"📞 किसान हेल्पलाइन\n1800-180-1551",
-
-footerTitle:"फसल संजीवनी © 2026",
-
-footerDesc:"किसानों के लिए AI आधारित समाधान"
-
-}
-
-};
 function showHelpline(){
 
     alert(
@@ -486,5 +468,3 @@ localStorage.getItem("language") || "en";
 changeLanguage(savedLanguage);
 
 };
-
-</script>

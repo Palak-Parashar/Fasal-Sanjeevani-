@@ -53,57 +53,53 @@ Diagnosis Records
 </section>
 
 <script>
-
-const historyData = JSON.parse(localStorage.getItem("historyData"));
-
 const container = document.getElementById("historyContainer");
 
-if(historyData && historyData.length>0){
+fetch("http://10.226.123.88:5000/history")
+.then(res => res.json())
+.then(historyData => {
 
-historyData.forEach((item,index)=>{
+if(historyData && historyData.length > 0){
 
-let icon="🦠";
+historyData.forEach((item, index) => {
 
-const disease=item.disease.toLowerCase();
+let icon = "🦠";
 
-if(disease.includes("healthy"))
-icon="🌿";
+const disease = item.disease.toLowerCase();
 
-else if(disease.includes("blight"))
-icon="🍂";
+if(disease.includes("healthy")) icon = "🌿";
+else if(disease.includes("blight")) icon = "🍂";
 
 container.innerHTML += `
-
 <div class="history-card">
-
-<h2>${icon} Record ${index+1}</h2>
-
-<p><strong>Disease</strong><br>${item.disease}</p>
-
-<p><strong>Date & Time</strong><br>${item.time}</p>
-
+    <h2>${icon} Record ${index+1}</h2>
+    <p><strong>Image</strong><br>${item.image}</p>
+    <p><strong>Disease</strong><br>${item.disease}</p>
+    <p><strong>Confidence</strong><br>${item.confidence}%</p>
+    <p><strong>Date & Time</strong><br>${item.time}</p>
 </div>
-
 `;
-
 });
 
-}else{
-
-container.innerHTML=`
-
+} else {
+container.innerHTML = `
 <div class="history-card">
-
 <h2>📂 No Records Found</h2>
-
 <p>No diagnosis history available.</p>
-
 </div>
-
 `;
-
 }
 
+})
+.catch(err => {
+    console.error("History Error:", err);
+container.innerHTML = `
+<div class="history-card">
+<h2>⚠️ Backend Not Connected</h2>
+<p>${err}</p>
+</div>
+`;
+});
 </script>
 
 </body>
